@@ -1,0 +1,72 @@
+package ass2;
+
+public class ValueActionFunction {
+		//Calculates the Value Function with invokation of method values(currentState, arbituaryCountUsedWithITERATION) 
+		//Two constructors. One with default values. Second with all set up values passed in
+		//Set up Values = {Iteration,M,CostperUnit,RetailSalesPrice,LostSalesPenalty,HoldingCost,DiscountFactorGamma}
+		
+
+	//M = max stock as inventory (predefined)
+	//gamma = predefined discount factor
+	//cost,retail,lostSalesPenalty,holdCost are for calculating reward
+		private int M;
+		private float GAMMA,cost,retail,lostSalesPenalty,holdCost;
+
+		public ValueActionFunction(){	
+		M= 2;
+		cost =2;
+		retail =3;
+		lostSalesPenalty =2;
+		holdCost= 1;
+		GAMMA = (float) 0.95;
+	}
+		public ValueActionFunction(int Mm, float Cost, float Retail, float LostSales, float HoldCost, float gamma){
+		M= Mm; 
+		cost = Cost;
+		retail = Retail;
+		lostSalesPenalty = LostSales;
+		holdCost= HoldCost;
+		GAMMA = gamma;
+	}
+		
+		//x_n_a = state action position
+	public float actionvalues(int x_n_a, float[] previousStateValues, float [] prob) 
+	{
+		int dif = 0;
+		float actionVal = 0; 
+		float reward = 0;
+		int nextX = 0;
+		
+			for (int demand = 0; demand <= M; demand++) 	
+				{	
+					dif = x_n_a-demand;
+					reward = getReward(dif,demand);
+					
+					if (dif > 0)
+						nextX = x_n_a-demand;
+					else 
+						nextX = 0;
+					
+					actionVal = ((prob[nextX])*(reward+(GAMMA*previousStateValues[nextX])))+actionVal; //(1/(M+1))=p(x'|x,ak)=averaging ...could
+				}
+				return actionVal;
+	}
+
+
+	private float getReward(int dif, int demand)
+		{
+			float reward = 0;
+
+			if (dif>0) //left over stock
+				{reward = (retail*demand)-(cost*demand)-(holdCost*dif);}
+			if (dif<0) //unrealized sales
+				{reward = (retail*(demand+dif))-(cost*(demand+dif))+(lostSalesPenalty*dif);}
+			if (dif==0) //no penalty best case, everything sold and no lost sales
+				{reward = (retail*demand)-(cost*demand);}
+			
+			return reward;
+
+		}
+	}
+
+

@@ -1,0 +1,94 @@
+package ass2;
+
+public class Value {
+	//Calculates the Value Function with invokation of method values(currentState, arbituaryCountUsedWithITERATION) 
+	//Two constructors. One with default values. Second with all set up values passed in
+	//Set up Values = {Iteration,M,CostperUnit,RetailSalesPrice,LostSalesPenalty,HoldingCost,DiscountFactorGamma}
+	
+	
+	private int ITERATION, M;  
+	//Setting an Absorbing State after ITERATION, stopping recursion at this pt
+	private float GAMMA,cost,retail,lostSalesPenalty,holdCost;
+
+	public Value(){
+	
+	ITERATION = 2; 
+	M= 2;
+	cost =2;
+	retail =3;
+	lostSalesPenalty =2;
+	holdCost= 1;
+	GAMMA = (float) 0.95;
+}
+	public Value(int iteration, int Mm, float Cost, float Retail, float LostSales, float HoldCost, float gamma){
+	ITERATION = iteration; 
+	M= Mm; 
+	cost = Cost;
+	retail = Retail;
+	lostSalesPenalty = LostSales;
+	holdCost= HoldCost;
+	GAMMA = gamma;
+}
+	
+	//x = xk = current state= int current stock in period k
+	//k = period --function call should always be with k =1, the reset is for recursive call
+	//M = max stock as inventory (predefined)
+	//gamma = predefined discount factor
+public float values(int x, int k, float[][] policy, float [] prob) 
+{
+	if( k > ITERATION){return 0;}
+	
+	int dif = 0;
+	float valueFunction_NS = 0; //nextState
+	float reward = 0;
+	float valueFunction_NA = 0; //nextAction
+	int nextX = 0;
+	int xna =0;
+	float policyTemp = 0;
+	
+	
+	//policy = poli;//new float[M+x];
+	//p_ns_given_as = prob;//new float[M];
+	
+	for (int a = 0;a <= M-x;a++)
+	{
+		valueFunction_NS = 0;
+		policyTemp = policy[a][x];
+		
+		if(policyTemp != 0){
+			for (int demand = 0; demand <= M; demand++) 	
+			{	
+				xna = x+a;
+				dif = xna-demand;
+				reward = getReward(dif,demand);
+				
+				if (dif > 0)
+					nextX = xna-demand;
+				else 
+					nextX = 0;
+				
+				valueFunction_NS = (prob[nextX])*(reward+(GAMMA*values(nextX, (k+1),policy,prob)))+valueFunction_NS; //(1/(M+1))=p(x'|x,ak)=averaging ...could
+			}
+		}
+		
+		valueFunction_NA = ((policyTemp)*valueFunction_NS) + valueFunction_NA;//(1/(M-x+1))=p(ak|x)=policy=avg=default||policy[][]=stores default...then adjusts
+	}
+	return valueFunction_NA;
+}
+
+
+private float getReward(int dif, int demand)
+	{
+		float reward = 0;
+
+		if (dif>0) //left over stock
+			{reward = (retail*demand)-(cost*demand)-(holdCost*dif);}
+		if (dif<0) //unrealized sales
+			{reward = (retail*(demand+dif))-(cost*(demand+dif))+(lostSalesPenalty*dif);}
+		if (dif==0) //no penalty best case, everything sold and no lost sales
+			{reward = (retail*demand)-(cost*demand);}
+		
+		return reward;
+
+	}
+}

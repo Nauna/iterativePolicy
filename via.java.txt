@@ -1,0 +1,133 @@
+
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+
+public class via {
+
+	public static void main(String[] args){	
+		Value b;
+		ValueActionFunction vaf;
+		float [] probability;
+		float [][] policy;
+		float deltaMax =0;
+		int policyIteration = 0;//count
+		float delta = (float)0.0001;
+		float compare =0;//compares old and new policy which is then compared to delta
+		int M,k;
+		float c,r,h,z;
+		int possibleActions = 0; //M-x+1 
+		float maxAction = 0;
+		int actionChoiceMaxVa,choice;		
+
+		try{
+	/*FILE READ---CHECK/CHANGE/CAREFUL WITH FILE PATH...NEXT LINE ONLY NEEDS ATTENTION*/
+  			BufferedReader file = new BufferedReader(new FileReader("C:\\Users\\annad\\Downloads\\School\\CPS841\\ass2\\file2.txt"));
+			String line = file.readLine();
+			String [] data = line.split(" ");
+			
+			M = Integer.parseInt(data[0]);
+			probability = new float[M+1];
+			policy = new float[M+1][M+1]; //float[action][state]	
+			float[][] actionValue = new float[M+1][M+1];
+			float[] stateValue = new float[M+1];
+			float[] prevstateValue = new float[M+1];
+			
+			for(int i = 0; i <= M;i++ ){	
+				probability[i] = Float.parseFloat(data[i+1]);
+			}
+
+			k = Integer.parseInt(data[M+2]); 
+			c = Float.parseFloat(data[M+3]);
+			r = Float.parseFloat(data[M+4]);
+			h = Float.parseFloat(data[M+5]);
+			z = Float.parseFloat(data[M+6]);
+			
+			file.close();
+			
+			
+			//Value(Iteration,M,CostperUnit,RetailSalesPrice,LostSalesPenalty,HoldingCost,DiscountFactorGamma
+			//ValueActionFunction(M,CostperUnit,RetailSalesPrice,LostSalesPenalty,HoldingCost,DiscountFactorGamma)
+			b = new Value(2,M,c,r,z,h,(float)0.95);
+			vaf = new ValueActionFunction(M,c,r,z,h,(float)0.95);
+			
+		//set up default policy
+			for(int x =0;x<=M;x++){
+				possibleActions = M-x+1;
+
+				for(int a =0;a<possibleActions;a++){
+					policy[a][x] = (float)1/possibleActions;			
+				}
+			}
+			
+			long startTime = System.currentTimeMillis();
+			
+			do{
+		//step zero: save previous Values per state...default first states = 0
+				for (int x = 0;x<=M;x++){
+					if(policyIteration != 0 )prevstateValue[x] = stateValue[x];
+					else prevstateValue[x]=0;
+				}
+				
+		//step one : calculate value for every state. Using equaprobable default
+				for(int x =0;x<=M;x++){
+					//values{currentState,alwaysONE,policy,prob of each state}
+					stateValue[x] = b.values(x,1,policy,probability);		
+				}
+		//step two : calculate ActionStateValue for every state. Using ValueStateFunction previously determined	
+				for(int x =0;x<=M;x++){
+					possibleActions = M-x+1;
+					for(int a =0;a<possibleActions;a++){
+						actionValue[a][x] = vaf.actionvalues(x+a,stateValue, probability);
+					}
+				}
+		//step three : Compare ActionValue with StateValue and Assign new policy for ActionValues > StateValue					
+				maxAction = 0;
+				actionChoiceMaxVa  = 0;
+				choice = 0; //indexing when assigning new policy
+				
+				for(int x =0;x<=M;x++){
+					possibleActions = M-x+1;
+					maxAction = 0;
+					for(int a =0;a<possibleActions;a++){					   
+						if(maxAction<actionValue[a][x]){
+							maxAction = actionValue[a][x];
+							actionChoiceMaxVa = a;
+						}
+					}
+					
+					if(maxAction >= stateValue[x] ){
+						for(int a =0;a<possibleActions;a++){
+						//policy of state x, set action choice to actionChoice
+							if( a == actionChoiceMaxVa) choice = 1;
+							else choice = 0;	
+							policy[a][x] = choice;  
+						}
+					}
+				}
+				
+				deltaMax=0;
+				for(int x =0;x<=M;x++){
+					compare = Math.abs(stateValue[x]-prevstateValue[x]);
+					if(compare>deltaMax){deltaMax=compare;}
+				}
+				policyIteration++;
+			}while(policyIteration <k && deltaMax > delta);
+			
+			long endTime = System.currentTimeMillis();
+							
+			for(int x =0;x<=M;x++){
+				possibleActions = M-x+1;
+				for(int a =0;a < possibleActions;a++){	
+					if(policy[a][x]==1)
+						System.out.println("Policy for state: " + x + " action: " + a + " is = " + policy[a][x] );
+				}
+			}
+			System.out.println("Iteration through policy convergence = " +policyIteration);
+			System.out.println("That took " + (endTime - startTime) + " milliseconds");
+		}catch(IOException e){}
+				
+	}//end main
+}
+
